@@ -1,4 +1,4 @@
-package br.gymcore_api;
+package br.gymcore;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

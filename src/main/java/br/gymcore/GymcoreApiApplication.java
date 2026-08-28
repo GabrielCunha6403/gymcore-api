@@ -1,4 +1,4 @@
-package br.gymcore_api;
+package br.gymcore;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
