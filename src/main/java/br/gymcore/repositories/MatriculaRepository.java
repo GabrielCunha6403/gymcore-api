@@ -10,4 +10,6 @@ public interface MatriculaRepository extends JpaRepository<Matricula, Long> {
     List<Matricula> findAllByAluno_IdIn(Collection<Long> alunoIds);
 
     List<Matricula> findAllByAluno_Id(Long alunoId);
+
+    List<Matricula> findAllByPlanoUnidade_Unidade_Id(Long idUnidade);
 }

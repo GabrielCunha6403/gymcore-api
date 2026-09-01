@@ -6,6 +6,7 @@ import br.gymcore.dtos.ProfessorListagemDto;
 import br.gymcore.forms.ProfessorForm;
 import br.gymcore.services.ProfessorService;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +33,13 @@ public class ProfessorController {
             @PageableDefault(size = 20, sort = "id") Pageable pageable
     ) {
         return ResponseEntity.ok(professorService.listar(busca, pageable));
+    }
+
+    @GetMapping("/porUnidade")
+    public ResponseEntity<List<ProfessorListagemDto>> listarPorUnidade(
+            @RequestParam Long idUnidade
+    ) {
+        return ResponseEntity.ok(professorService.listarPorUnidade(idUnidade));
     }
 
     @GetMapping("/getProfessorById")

@@ -89,6 +89,25 @@ public class ProfessorService {
     }
 
     @Transactional(readOnly = true)
+    public List<ProfessorListagemDto> listarPorUnidade(Long idUnidade) {
+        List<ProfessorUnidade> atuacoes = professorUnidadeRepository.findAllByUnidade_Id(idUnidade);
+
+        if (atuacoes.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> professorUnidadeIds = atuacoes.stream().map(ProfessorUnidade::getId).toList();
+        Map<Long, List<ProfessorUnidadeModalidade>> modalidadesPorAtuacao = professorUnidadeModalidadeRepository
+                .findAllByProfessorUnidade_IdIn(professorUnidadeIds)
+                .stream()
+                .collect(Collectors.groupingBy(vinculo -> vinculo.getProfessorUnidade().getId()));
+
+        return atuacoes.stream()
+                .map(atuacao -> toDtoPorUnidade(atuacao, modalidadesPorAtuacao.getOrDefault(atuacao.getId(), Collections.emptyList())))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public ProfessorDetalheDto getProfessorById(Long idProfessor) {
         Professor professor = professorRepository.findById(idProfessor)
                 .orElseThrow(() -> new EntityNotFoundException("Professor não encontrado"));
@@ -273,6 +292,23 @@ public class ProfessorService {
                 .filter(StringUtils::hasText)
                 .distinct()
                 .toList();
+    }
+
+    private ProfessorListagemDto toDtoPorUnidade(ProfessorUnidade atuacao, List<ProfessorUnidadeModalidade> modalidades) {
+        Professor professor = atuacao.getProfessor();
+        Pessoa pessoa = professor.getPessoa();
+        Unidade unidade = atuacao.getUnidade();
+
+        return new ProfessorListagemDto(
+                professor.getId(),
+                pessoa != null ? pessoa.getNome() : null,
+                pessoa != null ? pessoa.getCpf() : null,
+                pessoa != null ? pessoa.getEmail() : null,
+                pessoa != null ? pessoa.getTelefone() : null,
+                unidade != null && StringUtils.hasText(unidade.getNome()) ? List.of(unidade.getNome()) : Collections.emptyList(),
+                listarNomesModalidades(modalidades),
+                professor.getStatus()
+        );
     }
 
     private ProfessorDetalheDto toDetalheDto(

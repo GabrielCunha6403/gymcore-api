@@ -80,6 +80,28 @@ public class AlunoService {
     }
 
     @Transactional(readOnly = true)
+    public List<AlunoListagemDto> listarPorUnidade(Long idUnidade) {
+        List<Matricula> matriculas = matriculaRepository.findAllByPlanoUnidade_Unidade_Id(idUnidade);
+
+        if (matriculas.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Map<Long, List<Matricula>> matriculasPorAluno = matriculas.stream()
+                .collect(Collectors.groupingBy(matricula -> matricula.getAluno().getId()));
+        Map<Long, List<PlanoUnidadeModalidade>> modalidadesPorPlanoUnidade =
+                buscarModalidadesPorPlanoUnidade(matriculasPorAluno.values());
+
+        return matriculasPorAluno.values().stream()
+                .map(matriculasDoAluno -> toDto(
+                        matriculasDoAluno.get(0).getAluno(),
+                        matriculasDoAluno,
+                        modalidadesPorPlanoUnidade
+                ))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public AlunoDetalheDto getAlunoById(Long idAluno) {
         Aluno aluno = alunoRepository.findById(idAluno)
                 .orElseThrow(() -> new EntityNotFoundException("Aluno não encontrado"));

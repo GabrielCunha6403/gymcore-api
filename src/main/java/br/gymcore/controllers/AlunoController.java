@@ -6,6 +6,7 @@ import br.gymcore.dtos.PageDto;
 import br.gymcore.forms.AlunoForm;
 import br.gymcore.services.AlunoService;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +33,13 @@ public class AlunoController {
             @PageableDefault(size = 20, sort = "id") Pageable pageable
     ) {
         return ResponseEntity.ok(alunoService.listar(busca, pageable));
+    }
+
+    @GetMapping("/porUnidade")
+    public ResponseEntity<List<AlunoListagemDto>> listarPorUnidade(
+            @RequestParam Long idUnidade
+    ) {
+        return ResponseEntity.ok(alunoService.listarPorUnidade(idUnidade));
     }
 
     @GetMapping("/getAlunoById")
