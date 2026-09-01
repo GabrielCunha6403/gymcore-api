@@ -1,6 +1,7 @@
 package br.gymcore.services;
 
 import br.gymcore.dtos.PageDto;
+import br.gymcore.dtos.ProfessorDetalheDto;
 import br.gymcore.dtos.ProfessorListagemDto;
 import br.gymcore.entities.Modalidade;
 import br.gymcore.entities.Pessoa;
@@ -87,6 +88,20 @@ public class ProfessorService {
         return PageDto.from(professoresDto);
     }
 
+    @Transactional(readOnly = true)
+    public ProfessorDetalheDto getProfessorById(Long idProfessor) {
+        Professor professor = professorRepository.findById(idProfessor)
+                .orElseThrow(() -> new EntityNotFoundException("Professor não encontrado"));
+
+        List<ProfessorUnidade> atuacoes = professorUnidadeRepository.findAllByProfessor_IdIn(List.of(idProfessor));
+        List<Long> professorUnidadeIds = atuacoes.stream().map(ProfessorUnidade::getId).toList();
+        List<ProfessorUnidadeModalidade> vinculos = professorUnidadeIds.isEmpty()
+                ? Collections.emptyList()
+                : professorUnidadeModalidadeRepository.findAllByProfessorUnidade_IdIn(professorUnidadeIds);
+
+        return toDetalheDto(professor, atuacoes, vinculos);
+    }
+
     private Pessoa criarPessoa(ProfessorForm form) {
         ProfessorForm.DadosPessoais dadosPessoais = form.getDadosPessoais();
         ProfessorForm.Endereco endereco = form.getEndereco();
@@ -114,7 +129,7 @@ public class ProfessorService {
         professor.setPessoa(pessoa);
         professor.setRegistroProfissional(form.getProfissional().getRegistroProfissional());
         professor.setObservacoes(form.getProfissional().getObservacoes());
-        professor.setAtivo(form.getProfissional().getAtivo());
+        professor.setStatus(form.getProfissional().getStatus());
         return professor;
     }
 
@@ -230,7 +245,7 @@ public class ProfessorService {
                 pessoa != null ? pessoa.getTelefone() : null,
                 listarNomesUnidades(atuacoes),
                 listarNomesModalidades(atuacoes, modalidadesPorAtuacao),
-                professor.getAtivo()
+                professor.getStatus()
         );
     }
 
@@ -250,6 +265,72 @@ public class ProfessorService {
     ) {
         return atuacoes.stream()
                 .flatMap(atuacao -> modalidadesPorAtuacao.getOrDefault(atuacao.getId(), Collections.emptyList()).stream())
+                .map(ProfessorUnidadeModalidade::getUnidadeModalidade)
+                .filter(Objects::nonNull)
+                .map(UnidadeModalidade::getModalidade)
+                .filter(Objects::nonNull)
+                .map(Modalidade::getNome)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+    }
+
+    private ProfessorDetalheDto toDetalheDto(
+            Professor professor,
+            List<ProfessorUnidade> atuacoes,
+            List<ProfessorUnidadeModalidade> vinculos
+    ) {
+        Pessoa pessoa = professor.getPessoa();
+        ProfessorUnidade atuacaoPrincipal = atuacoes.isEmpty() ? null : atuacoes.get(0);
+
+        return new ProfessorDetalheDto(
+                professor.getId(),
+                pessoa != null ? pessoa.getNome() : null,
+                pessoa != null ? pessoa.getCpf() : null,
+                pessoa != null ? pessoa.getEmail() : null,
+                pessoa != null ? pessoa.getTelefone() : null,
+                pessoa != null ? pessoa.getDataNascimento() : null,
+                pessoa != null ? pessoa.getSexo() : null,
+                toEnderecoDto(pessoa),
+                professor.getRegistroProfissional(),
+                professor.getObservacoes(),
+                atuacaoPrincipal != null ? atuacaoPrincipal.getCodigo() : null,
+                atuacaoPrincipal != null ? atuacaoPrincipal.getAtivo() : null,
+                listarUnidadesVinculadas(atuacoes),
+                listarNomesModalidades(vinculos),
+                professor.getStatus()
+        );
+    }
+
+    private ProfessorDetalheDto.EnderecoDto toEnderecoDto(Pessoa pessoa) {
+        if (pessoa == null) {
+            return null;
+        }
+
+        return new ProfessorDetalheDto.EnderecoDto(
+                pessoa.getCep(),
+                pessoa.getLogradouro(),
+                pessoa.getNumero(),
+                pessoa.getComplemento(),
+                pessoa.getBairro(),
+                pessoa.getCidade(),
+                pessoa.getUf()
+        );
+    }
+
+    private List<ProfessorDetalheDto.UnidadeVinculadaDto> listarUnidadesVinculadas(List<ProfessorUnidade> atuacoes) {
+        return atuacoes.stream()
+                .map(ProfessorUnidade::getUnidade)
+                .filter(Objects::nonNull)
+                .map(unidade -> new ProfessorDetalheDto.UnidadeVinculadaDto(
+                        unidade.getEstabelecimento() != null ? unidade.getEstabelecimento().getNome() : null,
+                        unidade.getNome()
+                ))
+                .toList();
+    }
+
+    private List<String> listarNomesModalidades(List<ProfessorUnidadeModalidade> vinculos) {
+        return vinculos.stream()
                 .map(ProfessorUnidadeModalidade::getUnidadeModalidade)
                 .filter(Objects::nonNull)
                 .map(UnidadeModalidade::getModalidade)

@@ -48,7 +48,12 @@ public class UnidadeService {
         return unidadeRepository.save(unidade).getId();
     }
 
-    @Transactional(readOnly = true)
+    public UnidadeListagemDto getUnidadeById(Long idUnidade) {
+        Unidade unidade = unidadeRepository.findById(idUnidade).orElseThrow();
+        unidade.setEstabelecimento(estabelecimentoRepository.findById(unidade.getEstabelecimento().getId()).orElse(null));
+        return toDto(unidade, false);
+    }
+
     public List<UnidadeListagemDto> listar(Long idEstabelecimento, String busca) {
         busca = normalizarBusca(busca);
 

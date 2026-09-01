@@ -1,5 +1,6 @@
 package br.gymcore.dtos;
 
+import br.gymcore.enums.ProfessorStatus;
 import java.util.List;
 
 public record ProfessorListagemDto(
@@ -10,6 +11,6 @@ public record ProfessorListagemDto(
         String contato,
         List<String> unidades,
         List<String> modalidades,
-        Boolean status
+        ProfessorStatus status
 ) {
 }

@@ -46,7 +46,7 @@ public class Estabelecimento extends UserAuditableEntity {
     @Column(name = "logo_url", length = 500)
     private String logoUrl;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_tipo_estabelecimento")
     private TipoEstabelecimento tipoEstabelecimento;
 

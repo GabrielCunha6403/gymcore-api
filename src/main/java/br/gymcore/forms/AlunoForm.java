@@ -1,14 +1,15 @@
 package br.gymcore.forms;
 
-import br.gymcore.enums.ProfessorStatus;
+import br.gymcore.enums.MatriculaStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
-import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,7 +17,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class ProfessorForm {
+public class AlunoForm {
 
     @Valid
     @NotNull
@@ -28,11 +29,7 @@ public class ProfessorForm {
 
     @Valid
     @NotNull
-    private Profissional profissional;
-
-    @Valid
-    @NotNull
-    private Atuacao atuacao;
+    private Matricula matricula;
 
     @Getter
     @Setter
@@ -61,6 +58,9 @@ public class ProfessorForm {
         @NotBlank
         @Pattern(regexp = "^\\(\\d{2}\\) \\d{4,5}-\\d{4}$")
         private String telefone;
+
+        @NotNull
+        private Boolean ativo;
     }
 
     @Getter
@@ -100,36 +100,24 @@ public class ProfessorForm {
     @Getter
     @Setter
     @NoArgsConstructor
-    public static class Profissional {
-
-        @NotBlank
-        @Size(max = 50)
-        private String registroProfissional;
-
-        private String observacoes;
+    public static class Matricula {
 
         @NotNull
-        private ProfessorStatus status;
-    }
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    public static class Atuacao {
+        private Long planoUnidadeId;
 
         @NotNull
-        private Long estabelecimentoId;
+        private LocalDate dataInicio;
+
+        private LocalDate dataFim;
 
         @NotNull
-        private Long unidadeId;
-
-        @NotBlank
-        @Size(max = 50)
-        private String codigoInterno;
-
-        private List<Long> modalidades;
+        @Min(1)
+        @Max(31)
+        private Integer diaVencimento;
 
         @NotNull
-        private Boolean ativo;
+        private MatriculaStatus status;
+
+        private String motivoCancelamento;
     }
 }

@@ -1,8 +1,8 @@
 package br.gymcore.controllers;
 
-import br.gymcore.dtos.UnidadeListagemDto;
-import br.gymcore.forms.UnidadeForm;
-import br.gymcore.services.UnidadeService;
+import br.gymcore.dtos.PlanoListagemDto;
+import br.gymcore.forms.PlanoForm;
+import br.gymcore.services.PlanoService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -17,35 +17,35 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/unidade")
+@RequestMapping("/plano")
 @RequiredArgsConstructor
-public class UnidadeController {
+public class PlanoController {
 
-    private final UnidadeService unidadeService;
+    private final PlanoService planoService;
 
     @GetMapping
-    public ResponseEntity<List<UnidadeListagemDto>> listar(
+    public ResponseEntity<List<PlanoListagemDto>> listar(
             @RequestParam(required = false) Long idEstabelecimento,
             @RequestParam(required = false) String busca
     ) {
-        return ResponseEntity.ok(unidadeService.listar(idEstabelecimento, busca));
+        return ResponseEntity.ok(planoService.listar(idEstabelecimento, busca));
     }
 
-    @GetMapping("/getUnidadeById")
-    public ResponseEntity<UnidadeListagemDto> getUnidadeById(
-            @RequestParam Long idUnidade
+    @GetMapping("/getPlanoById")
+    public ResponseEntity<PlanoListagemDto> getPlanoById(
+            @RequestParam Long idPlano
     ) {
-        return ResponseEntity.ok(unidadeService.getUnidadeById(idUnidade));
+        return ResponseEntity.ok(planoService.getPlanoById(idPlano));
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, String>> cadastrar(@Valid @RequestBody UnidadeForm form) {
-        Long unidadeId = unidadeService.cadastrar(form);
+    public ResponseEntity<Map<String, String>> cadastrar(@Valid @RequestBody PlanoForm form) {
+        Long planoId = planoService.cadastrar(form);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(Map.of(
-                        "message", "Unidade cadastrada com sucesso",
-                        "unidadeId", String.valueOf(unidadeId)
+                        "message", "Plano cadastrado com sucesso",
+                        "planoId", String.valueOf(planoId)
                 ));
     }
 }

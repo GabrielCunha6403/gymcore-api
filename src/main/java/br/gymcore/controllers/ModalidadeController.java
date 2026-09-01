@@ -1,8 +1,8 @@
 package br.gymcore.controllers;
 
-import br.gymcore.dtos.UnidadeListagemDto;
-import br.gymcore.forms.UnidadeForm;
-import br.gymcore.services.UnidadeService;
+import br.gymcore.dtos.ModalidadeListagemDto;
+import br.gymcore.forms.ModalidadeForm;
+import br.gymcore.services.ModalidadeService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -17,35 +17,35 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/unidade")
+@RequestMapping("/modalidade")
 @RequiredArgsConstructor
-public class UnidadeController {
+public class ModalidadeController {
 
-    private final UnidadeService unidadeService;
+    private final ModalidadeService modalidadeService;
 
     @GetMapping
-    public ResponseEntity<List<UnidadeListagemDto>> listar(
+    public ResponseEntity<List<ModalidadeListagemDto>> listar(
             @RequestParam(required = false) Long idEstabelecimento,
             @RequestParam(required = false) String busca
     ) {
-        return ResponseEntity.ok(unidadeService.listar(idEstabelecimento, busca));
+        return ResponseEntity.ok(modalidadeService.listar(idEstabelecimento, busca));
     }
 
-    @GetMapping("/getUnidadeById")
-    public ResponseEntity<UnidadeListagemDto> getUnidadeById(
-            @RequestParam Long idUnidade
+    @GetMapping("/getModalidadeById")
+    public ResponseEntity<ModalidadeListagemDto> getModalidadeById(
+            @RequestParam Long idModalidade
     ) {
-        return ResponseEntity.ok(unidadeService.getUnidadeById(idUnidade));
+        return ResponseEntity.ok(modalidadeService.getModalidadeById(idModalidade));
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, String>> cadastrar(@Valid @RequestBody UnidadeForm form) {
-        Long unidadeId = unidadeService.cadastrar(form);
+    public ResponseEntity<Map<String, String>> cadastrar(@Valid @RequestBody ModalidadeForm form) {
+        Long modalidadeId = modalidadeService.cadastrar(form);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(Map.of(
-                        "message", "Unidade cadastrada com sucesso",
-                        "unidadeId", String.valueOf(unidadeId)
+                        "message", "Modalidade cadastrada com sucesso",
+                        "modalidadeId", String.valueOf(modalidadeId)
                 ));
     }
 }
