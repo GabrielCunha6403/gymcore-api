@@ -1,21 +1,31 @@
 package br.gymcore.services;
 
 import br.gymcore.dtos.PlanoUnidadeListagemDto;
+import br.gymcore.entities.Modalidade;
 import br.gymcore.entities.Plano;
 import br.gymcore.entities.PlanoUnidade;
+import br.gymcore.entities.PlanoUnidadeModalidade;
+import br.gymcore.entities.PlanoUnidadeModalidadeId;
 import br.gymcore.entities.TipoCobranca;
 import br.gymcore.entities.Unidade;
+import br.gymcore.entities.UnidadeModalidade;
 import br.gymcore.forms.PlanoUnidadeForm;
 import br.gymcore.repositories.PlanoRepository;
+import br.gymcore.repositories.PlanoUnidadeModalidadeRepository;
 import br.gymcore.repositories.PlanoUnidadeRepository;
 import br.gymcore.repositories.TipoCobrancaRepository;
+import br.gymcore.repositories.UnidadeModalidadeRepository;
 import br.gymcore.repositories.UnidadeRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +35,8 @@ public class PlanoUnidadeService {
     private final PlanoRepository planoRepository;
     private final TipoCobrancaRepository tipoCobrancaRepository;
     private final PlanoUnidadeRepository planoUnidadeRepository;
+    private final UnidadeModalidadeRepository unidadeModalidadeRepository;
+    private final PlanoUnidadeModalidadeRepository planoUnidadeModalidadeRepository;
 
     @Transactional
     public Long vincular(PlanoUnidadeForm form) {
@@ -45,6 +57,8 @@ public class PlanoUnidadeService {
         TipoCobranca tipoCobranca = tipoCobrancaRepository.findByCodigoAndAtivoTrue(form.getTipoCobranca())
                 .orElseThrow(() -> new EntityNotFoundException("Tipo de cobrança não encontrado"));
 
+        List<UnidadeModalidade> modalidades = buscarModalidadesDaUnidade(unidade.getId(), form.getModalidades());
+
         PlanoUnidade planoUnidade = new PlanoUnidade();
         planoUnidade.setPlano(plano);
         planoUnidade.setUnidade(unidade);
@@ -57,18 +71,72 @@ public class PlanoUnidadeService {
         planoUnidade.setDiaVencimentoPadrao(form.getDiaVencimentoPadrao());
         planoUnidade.setAtivo(form.getAtivo() != null ? form.getAtivo() : Boolean.TRUE);
 
-        return planoUnidadeRepository.save(planoUnidade).getId();
+        planoUnidade = planoUnidadeRepository.save(planoUnidade);
+
+        vincularModalidades(planoUnidade, modalidades);
+
+        return planoUnidade.getId();
     }
 
     @Transactional(readOnly = true)
     public List<PlanoUnidadeListagemDto> listar(Long idUnidade) {
-        return planoUnidadeRepository.listarPorUnidade(idUnidade)
-                .stream()
-                .map(this::toDto)
+        List<PlanoUnidade> planosUnidade = planoUnidadeRepository.listarPorUnidade(idUnidade);
+        Map<Long, List<PlanoUnidadeModalidade>> modalidadesPorPlanoUnidade = buscarModalidadesPorPlanoUnidade(planosUnidade);
+
+        return planosUnidade.stream()
+                .map(planoUnidade -> toDto(
+                        planoUnidade,
+                        modalidadesPorPlanoUnidade.getOrDefault(planoUnidade.getId(), Collections.emptyList())
+                ))
                 .toList();
     }
 
-    private PlanoUnidadeListagemDto toDto(PlanoUnidade planoUnidade) {
+    private List<UnidadeModalidade> buscarModalidadesDaUnidade(Long idUnidade, List<Long> idsUnidadeModalidade) {
+        if (idsUnidadeModalidade == null || idsUnidadeModalidade.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> idsUnicos = idsUnidadeModalidade.stream().distinct().toList();
+        List<UnidadeModalidade> modalidades = unidadeModalidadeRepository.findAllByIdInAndUnidade_Id(idsUnicos, idUnidade);
+
+        if (modalidades.size() != idsUnicos.size()) {
+            throw new EntityNotFoundException("Uma ou mais modalidades informadas não pertencem a esta unidade");
+        }
+
+        return modalidades;
+    }
+
+    private void vincularModalidades(PlanoUnidade planoUnidade, List<UnidadeModalidade> modalidades) {
+        if (modalidades.isEmpty()) {
+            return;
+        }
+
+        List<PlanoUnidadeModalidade> vinculos = modalidades.stream()
+                .map(unidadeModalidade -> {
+                    PlanoUnidadeModalidade vinculo = new PlanoUnidadeModalidade();
+                    vinculo.setId(new PlanoUnidadeModalidadeId(planoUnidade.getId(), unidadeModalidade.getId()));
+                    vinculo.setPlanoUnidade(planoUnidade);
+                    vinculo.setUnidadeModalidade(unidadeModalidade);
+                    return vinculo;
+                })
+                .toList();
+
+        planoUnidadeModalidadeRepository.saveAll(vinculos);
+    }
+
+    private Map<Long, List<PlanoUnidadeModalidade>> buscarModalidadesPorPlanoUnidade(List<PlanoUnidade> planosUnidade) {
+        List<Long> ids = planosUnidade.stream().map(PlanoUnidade::getId).toList();
+
+        if (ids.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        return planoUnidadeModalidadeRepository.findAllByPlanoUnidade_IdIn(ids)
+                .stream()
+                .collect(Collectors.groupingBy(vinculo -> vinculo.getPlanoUnidade().getId()));
+    }
+
+    private PlanoUnidadeListagemDto toDto(PlanoUnidade planoUnidade, List<PlanoUnidadeModalidade> vinculos) {
         Plano plano = planoUnidade.getPlano();
         TipoCobranca tipoCobranca = planoUnidade.getTipoCobranca();
 
@@ -86,7 +154,20 @@ public class PlanoUnidadeService {
                 tipoCobranca != null ? tipoCobranca.getCodigo() : null,
                 planoUnidade.getTaxaAdesao(),
                 planoUnidade.getDiaVencimentoPadrao(),
-                planoUnidade.getAtivo()
+                planoUnidade.getAtivo(),
+                listarNomesModalidades(vinculos)
         );
+    }
+
+    private List<String> listarNomesModalidades(List<PlanoUnidadeModalidade> vinculos) {
+        return vinculos.stream()
+                .map(PlanoUnidadeModalidade::getUnidadeModalidade)
+                .filter(Objects::nonNull)
+                .map(UnidadeModalidade::getModalidade)
+                .filter(Objects::nonNull)
+                .map(Modalidade::getNome)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
     }
 }

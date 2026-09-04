@@ -2,6 +2,7 @@ package br.gymcore.dtos;
 
 import br.gymcore.enums.TipoCobrancaCodigo;
 import java.math.BigDecimal;
+import java.util.List;
 
 public record PlanoUnidadeListagemDto(
         String id,
@@ -17,6 +18,7 @@ public record PlanoUnidadeListagemDto(
         TipoCobrancaCodigo tipoCobranca,
         BigDecimal taxaAdesao,
         Integer diaVencimentoPadrao,
-        Boolean ativo
+        Boolean ativo,
+        List<String> modalidades
 ) {
 }

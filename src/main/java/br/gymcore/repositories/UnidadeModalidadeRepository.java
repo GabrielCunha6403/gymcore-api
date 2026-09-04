@@ -21,4 +21,12 @@ public interface UnidadeModalidadeRepository extends JpaRepository<UnidadeModali
             order by m.nome
             """)
     List<UnidadeModalidade> listarPorUnidade(@Param("idUnidade") Long idUnidade);
+
+    @Query("""
+            select um
+            from UnidadeModalidade um
+            join fetch um.unidade u
+            where um.modalidade.id in :idsModalidade
+            """)
+    List<UnidadeModalidade> findAllByModalidade_IdIn(@Param("idsModalidade") Collection<Long> idsModalidade);
 }

@@ -1,12 +1,16 @@
 package br.gymcore.controllers;
 
+import br.gymcore.dtos.ModalidadeGeralListagemDto;
 import br.gymcore.dtos.ModalidadeListagemDto;
+import br.gymcore.dtos.PageDto;
 import br.gymcore.forms.ModalidadeForm;
 import br.gymcore.services.ModalidadeService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +33,14 @@ public class ModalidadeController {
             @RequestParam(required = false) String busca
     ) {
         return ResponseEntity.ok(modalidadeService.listar(idEstabelecimento, busca));
+    }
+
+    @GetMapping("/geral")
+    public ResponseEntity<PageDto<ModalidadeGeralListagemDto>> listarGeral(
+            @RequestParam(required = false) String busca,
+            @PageableDefault(size = 20, sort = "nome") Pageable pageable
+    ) {
+        return ResponseEntity.ok(modalidadeService.listarGeral(busca, pageable));
     }
 
     @GetMapping("/getModalidadeById")
