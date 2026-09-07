@@ -3,6 +3,7 @@ package br.gymcore.repositories;
 import br.gymcore.entities.ProfessorUnidade;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ProfessorUnidadeRepository extends JpaRepository<ProfessorUnidade, Long> {
@@ -10,4 +11,6 @@ public interface ProfessorUnidadeRepository extends JpaRepository<ProfessorUnida
     List<ProfessorUnidade> findAllByProfessor_IdIn(Collection<Long> professorIds);
 
     List<ProfessorUnidade> findAllByUnidade_Id(Long idUnidade);
+
+    Optional<ProfessorUnidade> findByProfessor_IdAndUnidade_Id(Long idProfessor, Long idUnidade);
 }

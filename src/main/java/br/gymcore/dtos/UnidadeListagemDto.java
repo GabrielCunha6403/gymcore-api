@@ -14,6 +14,7 @@ public record UnidadeListagemDto(
         String telefone,
         EnderecoDto endereco,
         EstabelecimentoStatus status,
+        Boolean ativo,
         Boolean matriz
 ) {
 

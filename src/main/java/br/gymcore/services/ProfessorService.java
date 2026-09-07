@@ -107,6 +107,42 @@ public class ProfessorService {
                 .toList();
     }
 
+    @Transactional
+    public void atualizar(Long idProfessor, ProfessorForm form) {
+        Professor professor = professorRepository.findById(idProfessor)
+                .orElseThrow(() -> new EntityNotFoundException("Professor não encontrado"));
+
+        Pessoa pessoa = professor.getPessoa();
+        ProfessorForm.DadosPessoais dadosPessoais = form.getDadosPessoais();
+        ProfessorForm.Endereco endereco = form.getEndereco();
+
+        pessoa.setNome(dadosPessoais.getNome());
+        pessoa.setCpf(onlyDigits(dadosPessoais.getCpf()));
+        pessoa.setDataNascimento(dadosPessoais.getDataNascimento());
+        pessoa.setEmail(dadosPessoais.getEmail());
+        pessoa.setTelefone(dadosPessoais.getTelefone());
+        pessoa.setSexo(dadosPessoais.getSexo());
+        pessoa.setCep(onlyDigits(endereco.getCep()));
+        pessoa.setLogradouro(endereco.getLogradouro());
+        pessoa.setNumero(endereco.getNumero());
+        pessoa.setComplemento(endereco.getComplemento());
+        pessoa.setBairro(endereco.getBairro());
+        pessoa.setCidade(endereco.getCidade());
+        pessoa.setUf(endereco.getUf());
+
+        professor.setRegistroProfissional(form.getProfissional().getRegistroProfissional());
+        professor.setObservacoes(form.getProfissional().getObservacoes());
+        professor.setStatus(form.getProfissional().getStatus());
+
+        List<ProfessorUnidade> atuacoes = professorUnidadeRepository.findAllByProfessor_IdIn(List.of(idProfessor));
+
+        if (!atuacoes.isEmpty()) {
+            ProfessorUnidade atuacaoPrincipal = atuacoes.get(0);
+            atuacaoPrincipal.setCodigo(form.getAtuacao().getCodigoInterno());
+            atuacaoPrincipal.setAtivo(form.getAtuacao().getAtivo());
+        }
+    }
+
     @Transactional(readOnly = true)
     public ProfessorDetalheDto getProfessorById(Long idProfessor) {
         Professor professor = professorRepository.findById(idProfessor)

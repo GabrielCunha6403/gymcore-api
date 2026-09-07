@@ -57,6 +57,26 @@ public class EstabelecimentoService {
         );
     }
 
+    @Transactional
+    public void atualizar(Long idEstabelecimento, EstabelecimentoForm form) {
+        Estabelecimento estabelecimento = estabelecimentoRepository.findById(idEstabelecimento)
+                .orElseThrow(() -> new EntityNotFoundException("Estabelecimento não encontrado"));
+
+        TipoEstabelecimento tipoEstabelecimento = tipoEstabelecimentoRepository
+                .findByCodigoAndAtivoTrue(form.getTipo())
+                .orElseThrow(() -> new EntityNotFoundException("Tipo de estabelecimento nao encontrado"));
+
+        estabelecimento.setNome(form.getNome());
+        estabelecimento.setRazaoSocial(form.getRazaoSocial());
+        estabelecimento.setEmail(form.getEmail());
+        estabelecimento.setTelefone(form.getTelefone());
+        estabelecimento.setSite(form.getSite());
+        estabelecimento.setLogoUrl(form.getLogoUrl());
+        estabelecimento.setTipoEstabelecimento(tipoEstabelecimento);
+        estabelecimento.setStatus(form.getStatus() != null ? form.getStatus() : EstabelecimentoStatus.ATIVO);
+        estabelecimento.setAtivo(form.getAtivo() != null ? form.getAtivo() : Boolean.TRUE);
+    }
+
     public List<EstabelecimentoListagemDto> listar(String busca) {
         busca = normalizarBusca(busca);
 
@@ -91,6 +111,8 @@ public class EstabelecimentoService {
     }
 
     private EstabelecimentoListagemDto toDto(Estabelecimento estabelecimento, List<Unidade> unidades) {
+        TipoEstabelecimento tipoEstabelecimento = estabelecimento.getTipoEstabelecimento();
+
         return new EstabelecimentoListagemDto(
                 String.valueOf(estabelecimento.getId()),
                 estabelecimento.getNome(),
@@ -100,7 +122,9 @@ public class EstabelecimentoService {
                 estabelecimento.getEmail(),
                 estabelecimento.getTelefone(),
                 estabelecimento.getSite(),
+                tipoEstabelecimento != null ? tipoEstabelecimento.getCodigo() : null,
                 estabelecimento.getStatus(),
+                estabelecimento.getAtivo(),
                 unidades.size()
         );
     }

@@ -38,6 +38,7 @@ public record AlunoDetalheDto(
 
     public record MatriculaDetalheDto(
             Long idMatricula,
+            Long planoUnidadeId,
             String unidade,
             String plano,
             LocalDate dataInicio,

@@ -58,6 +58,16 @@ public class ModalidadeService {
         return toDto(modalidade);
     }
 
+    @Transactional
+    public void atualizar(Long idModalidade, ModalidadeForm form) {
+        Modalidade modalidade = modalidadeRepository.findById(idModalidade)
+                .orElseThrow(() -> new EntityNotFoundException("Modalidade não encontrada"));
+
+        modalidade.setNome(form.getNome());
+        modalidade.setDescricao(form.getDescricao());
+        modalidade.setAtivo(form.getAtivo() != null ? form.getAtivo() : Boolean.TRUE);
+    }
+
     public List<ModalidadeListagemDto> listar(Long idEstabelecimento, String busca) {
         busca = normalizarBusca(busca);
 

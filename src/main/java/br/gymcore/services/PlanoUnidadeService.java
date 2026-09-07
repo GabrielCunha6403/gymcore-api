@@ -1,6 +1,8 @@
 package br.gymcore.services;
 
+import br.gymcore.dtos.PlanoUnidadeDetalheDto;
 import br.gymcore.dtos.PlanoUnidadeListagemDto;
+import br.gymcore.entities.Estabelecimento;
 import br.gymcore.entities.Modalidade;
 import br.gymcore.entities.Plano;
 import br.gymcore.entities.PlanoUnidade;
@@ -79,8 +81,63 @@ public class PlanoUnidadeService {
     }
 
     @Transactional(readOnly = true)
-    public List<PlanoUnidadeListagemDto> listar(Long idUnidade) {
-        List<PlanoUnidade> planosUnidade = planoUnidadeRepository.listarPorUnidade(idUnidade);
+    public PlanoUnidadeDetalheDto getPlanoUnidadeById(Long idPlanoUnidade) {
+        PlanoUnidade planoUnidade = planoUnidadeRepository.findById(idPlanoUnidade)
+                .orElseThrow(() -> new EntityNotFoundException("Oferta de plano não encontrada"));
+
+        List<PlanoUnidadeModalidade> vinculos = planoUnidadeModalidadeRepository
+                .findAllByPlanoUnidade_IdIn(List.of(idPlanoUnidade));
+
+        Plano plano = planoUnidade.getPlano();
+        TipoCobranca tipoCobranca = planoUnidade.getTipoCobranca();
+
+        return new PlanoUnidadeDetalheDto(
+                String.valueOf(planoUnidade.getId()),
+                String.valueOf(planoUnidade.getUnidade().getId()),
+                String.valueOf(plano.getId()),
+                plano.getNome(),
+                planoUnidade.getNomeExibicao(),
+                planoUnidade.getDescricao(),
+                planoUnidade.getValor(),
+                planoUnidade.getDuracaoMeses(),
+                tipoCobranca != null ? tipoCobranca.getCodigo() : null,
+                planoUnidade.getTaxaAdesao(),
+                planoUnidade.getDiaVencimentoPadrao(),
+                planoUnidade.getAtivo(),
+                vinculos.stream().map(vinculo -> String.valueOf(vinculo.getUnidadeModalidade().getId())).toList()
+        );
+    }
+
+    @Transactional
+    public void atualizar(Long idPlanoUnidade, PlanoUnidadeForm form) {
+        PlanoUnidade planoUnidade = planoUnidadeRepository.findById(idPlanoUnidade)
+                .orElseThrow(() -> new EntityNotFoundException("Oferta de plano não encontrada"));
+
+        TipoCobranca tipoCobranca = tipoCobrancaRepository.findByCodigoAndAtivoTrue(form.getTipoCobranca())
+                .orElseThrow(() -> new EntityNotFoundException("Tipo de cobrança não encontrado"));
+
+        List<UnidadeModalidade> modalidades = buscarModalidadesDaUnidade(planoUnidade.getUnidade().getId(), form.getModalidades());
+
+        planoUnidade.setNomeExibicao(form.getNomeExibicao());
+        planoUnidade.setDescricao(form.getDescricao());
+        planoUnidade.setValor(form.getValor());
+        planoUnidade.setDuracaoMeses(form.getDuracaoMeses());
+        planoUnidade.setTipoCobranca(tipoCobranca);
+        planoUnidade.setTaxaAdesao(form.getTaxaAdesao());
+        planoUnidade.setDiaVencimentoPadrao(form.getDiaVencimentoPadrao());
+        planoUnidade.setAtivo(form.getAtivo() != null ? form.getAtivo() : Boolean.TRUE);
+
+        planoUnidadeModalidadeRepository.deleteAllByPlanoUnidade_Id(planoUnidade.getId());
+        planoUnidadeModalidadeRepository.flush();
+        vincularModalidades(planoUnidade, modalidades);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PlanoUnidadeListagemDto> listar(Long idUnidade, String busca) {
+        List<PlanoUnidade> planosUnidade = idUnidade != null
+                ? planoUnidadeRepository.listarPorUnidade(idUnidade)
+                : planoUnidadeRepository.listarGeral(normalizarBusca(busca));
+
         Map<Long, List<PlanoUnidadeModalidade>> modalidadesPorPlanoUnidade = buscarModalidadesPorPlanoUnidade(planosUnidade);
 
         return planosUnidade.stream()
@@ -89,6 +146,10 @@ public class PlanoUnidadeService {
                         modalidadesPorPlanoUnidade.getOrDefault(planoUnidade.getId(), Collections.emptyList())
                 ))
                 .toList();
+    }
+
+    private String normalizarBusca(String value) {
+        return StringUtils.hasText(value) ? value.trim().toLowerCase() : "";
     }
 
     private List<UnidadeModalidade> buscarModalidadesDaUnidade(Long idUnidade, List<Long> idsUnidadeModalidade) {
@@ -138,11 +199,16 @@ public class PlanoUnidadeService {
 
     private PlanoUnidadeListagemDto toDto(PlanoUnidade planoUnidade, List<PlanoUnidadeModalidade> vinculos) {
         Plano plano = planoUnidade.getPlano();
+        Unidade unidade = planoUnidade.getUnidade();
+        Estabelecimento estabelecimento = unidade != null ? unidade.getEstabelecimento() : null;
         TipoCobranca tipoCobranca = planoUnidade.getTipoCobranca();
 
         return new PlanoUnidadeListagemDto(
                 String.valueOf(planoUnidade.getId()),
-                String.valueOf(planoUnidade.getUnidade().getId()),
+                unidade != null ? String.valueOf(unidade.getId()) : null,
+                unidade != null ? unidade.getNome() : null,
+                estabelecimento != null ? String.valueOf(estabelecimento.getId()) : null,
+                estabelecimento != null ? estabelecimento.getNome() : null,
                 String.valueOf(plano.getId()),
                 plano.getNome(),
                 plano.getDescricao(),

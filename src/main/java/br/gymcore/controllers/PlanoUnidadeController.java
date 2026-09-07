@@ -1,5 +1,6 @@
 package br.gymcore.controllers;
 
+import br.gymcore.dtos.PlanoUnidadeDetalheDto;
 import br.gymcore.dtos.PlanoUnidadeListagemDto;
 import br.gymcore.forms.PlanoUnidadeForm;
 import br.gymcore.services.PlanoUnidadeService;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -25,9 +27,17 @@ public class PlanoUnidadeController {
 
     @GetMapping
     public ResponseEntity<List<PlanoUnidadeListagemDto>> listar(
-            @RequestParam Long idUnidade
+            @RequestParam(required = false) Long idUnidade,
+            @RequestParam(required = false) String busca
     ) {
-        return ResponseEntity.ok(planoUnidadeService.listar(idUnidade));
+        return ResponseEntity.ok(planoUnidadeService.listar(idUnidade, busca));
+    }
+
+    @GetMapping("/getPlanoUnidadeById")
+    public ResponseEntity<PlanoUnidadeDetalheDto> getPlanoUnidadeById(
+            @RequestParam Long idPlanoUnidade
+    ) {
+        return ResponseEntity.ok(planoUnidadeService.getPlanoUnidadeById(idPlanoUnidade));
     }
 
     @PostMapping
@@ -39,5 +49,15 @@ public class PlanoUnidadeController {
                         "message", "Plano vinculado com sucesso",
                         "planoUnidadeId", String.valueOf(planoUnidadeId)
                 ));
+    }
+
+    @PutMapping
+    public ResponseEntity<Map<String, String>> atualizar(
+            @RequestParam Long idPlanoUnidade,
+            @Valid @RequestBody PlanoUnidadeForm form
+    ) {
+        planoUnidadeService.atualizar(idPlanoUnidade, form);
+
+        return ResponseEntity.ok(Map.of("message", "Oferta de plano atualizada com sucesso"));
     }
 }

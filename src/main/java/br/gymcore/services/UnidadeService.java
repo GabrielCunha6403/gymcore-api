@@ -54,6 +54,25 @@ public class UnidadeService {
         return toDto(unidade, false);
     }
 
+    @Transactional
+    public void atualizar(Long idUnidade, UnidadeForm form) {
+        Unidade unidade = unidadeRepository.findById(idUnidade)
+                .orElseThrow(() -> new EntityNotFoundException("Unidade não encontrada"));
+
+        unidade.setNome(form.getNome());
+        unidade.setCnpj(onlyDigits(form.getCnpj()));
+        unidade.setEmail(form.getEmail());
+        unidade.setTelefone(form.getTelefone());
+        unidade.setCep(onlyDigits(form.getEndereco().getCep()));
+        unidade.setLogradouro(form.getEndereco().getLogradouro());
+        unidade.setNumero(form.getEndereco().getNumero());
+        unidade.setComplemento(form.getEndereco().getComplemento());
+        unidade.setBairro(form.getEndereco().getBairro());
+        unidade.setCidade(form.getEndereco().getCidade());
+        unidade.setUf(form.getEndereco().getUf());
+        unidade.setAtivo(form.getAtivo() != null ? form.getAtivo() : Boolean.TRUE);
+    }
+
     public List<UnidadeListagemDto> listar(Long idEstabelecimento, String busca) {
         busca = normalizarBusca(busca);
 
@@ -122,6 +141,7 @@ public class UnidadeService {
                 unidade.getTelefone(),
                 toEnderecoDto(unidade),
                 resolverStatus(unidade, estabelecimento),
+                unidade.getAtivo(),
                 matriz
         );
     }

@@ -14,9 +14,27 @@ public interface PlanoUnidadeRepository extends JpaRepository<PlanoUnidade, Long
             select pu
             from PlanoUnidade pu
             join fetch pu.plano p
+            join fetch pu.unidade u
+            join fetch u.estabelecimento e
             left join fetch pu.tipoCobranca tc
             where pu.unidade.id = :idUnidade
             order by p.nome
             """)
     List<PlanoUnidade> listarPorUnidade(@Param("idUnidade") Long idUnidade);
+
+    @Query("""
+            select pu
+            from PlanoUnidade pu
+            join fetch pu.plano p
+            join fetch pu.unidade u
+            join fetch u.estabelecimento e
+            left join fetch pu.tipoCobranca tc
+            where :busca = ''
+               or lower(p.nome) like concat('%', :busca, '%')
+               or lower(pu.nomeExibicao) like concat('%', :busca, '%')
+               or lower(u.nome) like concat('%', :busca, '%')
+               or lower(e.nome) like concat('%', :busca, '%')
+            order by e.nome, u.nome, p.nome
+            """)
+    List<PlanoUnidade> listarGeral(@Param("busca") String busca);
 }

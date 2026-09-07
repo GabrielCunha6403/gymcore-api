@@ -101,6 +101,32 @@ public class AlunoService {
                 .toList();
     }
 
+    @Transactional
+    public void atualizar(Long idAluno, AlunoForm form) {
+        Aluno aluno = alunoRepository.findById(idAluno)
+                .orElseThrow(() -> new EntityNotFoundException("Aluno não encontrado"));
+
+        Pessoa pessoa = aluno.getPessoa();
+        AlunoForm.DadosPessoais dadosPessoais = form.getDadosPessoais();
+        AlunoForm.Endereco endereco = form.getEndereco();
+
+        pessoa.setNome(dadosPessoais.getNome());
+        pessoa.setCpf(onlyDigits(dadosPessoais.getCpf()));
+        pessoa.setDataNascimento(dadosPessoais.getDataNascimento());
+        pessoa.setEmail(dadosPessoais.getEmail());
+        pessoa.setTelefone(dadosPessoais.getTelefone());
+        pessoa.setSexo(dadosPessoais.getSexo());
+        pessoa.setCep(onlyDigits(endereco.getCep()));
+        pessoa.setLogradouro(endereco.getLogradouro());
+        pessoa.setNumero(endereco.getNumero());
+        pessoa.setComplemento(endereco.getComplemento());
+        pessoa.setBairro(endereco.getBairro());
+        pessoa.setCidade(endereco.getCidade());
+        pessoa.setUf(endereco.getUf());
+
+        aluno.setAtivo(dadosPessoais.getAtivo());
+    }
+
     @Transactional(readOnly = true)
     public AlunoDetalheDto getAlunoById(Long idAluno) {
         Aluno aluno = alunoRepository.findById(idAluno)
@@ -380,6 +406,7 @@ public class AlunoService {
 
         return new AlunoDetalheDto.MatriculaDetalheDto(
                 matricula.getId(),
+                planoUnidade != null ? planoUnidade.getId() : null,
                 unidade != null ? unidade.getNome() : null,
                 plano != null ? plano.getNome() : null,
                 matricula.getDataInicio(),
