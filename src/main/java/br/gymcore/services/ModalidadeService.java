@@ -68,6 +68,14 @@ public class ModalidadeService {
         modalidade.setAtivo(form.getAtivo() != null ? form.getAtivo() : Boolean.TRUE);
     }
 
+    @Transactional
+    public void inativar(Long idModalidade) {
+        Modalidade modalidade = modalidadeRepository.findById(idModalidade)
+                .orElseThrow(() -> new EntityNotFoundException("Modalidade não encontrada"));
+
+        modalidade.setAtivo(Boolean.FALSE);
+    }
+
     public List<ModalidadeListagemDto> listar(Long idEstabelecimento, String busca) {
         busca = normalizarBusca(busca);
 

@@ -77,6 +77,15 @@ public class EstabelecimentoService {
         estabelecimento.setAtivo(form.getAtivo() != null ? form.getAtivo() : Boolean.TRUE);
     }
 
+    @Transactional
+    public void inativar(Long idEstabelecimento) {
+        Estabelecimento estabelecimento = estabelecimentoRepository.findById(idEstabelecimento)
+                .orElseThrow(() -> new EntityNotFoundException("Estabelecimento não encontrado"));
+
+        estabelecimento.setStatus(EstabelecimentoStatus.INATIVO);
+        estabelecimento.setAtivo(Boolean.FALSE);
+    }
+
     public List<EstabelecimentoListagemDto> listar(String busca) {
         busca = normalizarBusca(busca);
 

@@ -43,6 +43,13 @@ public class ProfessorController {
         return ResponseEntity.ok(professorService.listarPorUnidade(idUnidade));
     }
 
+    @GetMapping("/porUnidadeModalidade")
+    public ResponseEntity<List<ProfessorListagemDto>> listarPorUnidadeModalidade(
+            @RequestParam Long idUnidadeModalidade
+    ) {
+        return ResponseEntity.ok(professorService.listarPorUnidadeModalidade(idUnidadeModalidade));
+    }
+
     @GetMapping("/getProfessorById")
     public ResponseEntity<ProfessorDetalheDto> getProfessorById(
             @RequestParam Long idProfessor
@@ -69,5 +76,22 @@ public class ProfessorController {
         professorService.atualizar(idProfessor, form);
 
         return ResponseEntity.ok(Map.of("message", "Professor atualizado com sucesso"));
+    }
+
+    @PutMapping("/inativar")
+    public ResponseEntity<Map<String, String>> inativar(@RequestParam Long idProfessor) {
+        professorService.inativar(idProfessor);
+
+        return ResponseEntity.ok(Map.of("message", "Professor inativado com sucesso"));
+    }
+
+    @PutMapping("/desligar")
+    public ResponseEntity<Map<String, String>> desligar(
+            @RequestParam Long idProfessor,
+            @RequestParam Long idUnidade
+    ) {
+        professorService.desligarDaUnidade(idProfessor, idUnidade);
+
+        return ResponseEntity.ok(Map.of("message", "Professor desligado da unidade com sucesso"));
     }
 }

@@ -132,6 +132,14 @@ public class PlanoUnidadeService {
         vincularModalidades(planoUnidade, modalidades);
     }
 
+    @Transactional
+    public void inativar(Long idPlanoUnidade) {
+        PlanoUnidade planoUnidade = planoUnidadeRepository.findById(idPlanoUnidade)
+                .orElseThrow(() -> new EntityNotFoundException("Oferta de plano não encontrada"));
+
+        planoUnidade.setAtivo(Boolean.FALSE);
+    }
+
     @Transactional(readOnly = true)
     public List<PlanoUnidadeListagemDto> listar(Long idUnidade, String busca) {
         List<PlanoUnidade> planosUnidade = idUnidade != null

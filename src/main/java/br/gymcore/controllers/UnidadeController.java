@@ -59,4 +59,11 @@ public class UnidadeController {
 
         return ResponseEntity.ok(Map.of("message", "Unidade atualizada com sucesso"));
     }
+
+    @PutMapping("/inativar")
+    public ResponseEntity<Map<String, String>> inativar(@RequestParam Long idUnidade) {
+        unidadeService.inativar(idUnidade);
+
+        return ResponseEntity.ok(Map.of("message", "Unidade inativada com sucesso"));
+    }
 }

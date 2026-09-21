@@ -11,6 +11,8 @@ public interface ProfessorUnidadeModalidadeRepository extends JpaRepository<Prof
 
     List<ProfessorUnidadeModalidade> findAllByProfessorUnidade_IdIn(Collection<Long> professorUnidadeIds);
 
+    void deleteAllByProfessorUnidade_Id(Long idProfessorUnidade);
+
     @Query("""
             select pum
             from ProfessorUnidadeModalidade pum

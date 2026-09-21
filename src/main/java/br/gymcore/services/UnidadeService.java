@@ -73,6 +73,14 @@ public class UnidadeService {
         unidade.setAtivo(form.getAtivo() != null ? form.getAtivo() : Boolean.TRUE);
     }
 
+    @Transactional
+    public void inativar(Long idUnidade) {
+        Unidade unidade = unidadeRepository.findById(idUnidade)
+                .orElseThrow(() -> new EntityNotFoundException("Unidade não encontrada"));
+
+        unidade.setAtivo(Boolean.FALSE);
+    }
+
     public List<UnidadeListagemDto> listar(Long idEstabelecimento, String busca) {
         busca = normalizarBusca(busca);
 

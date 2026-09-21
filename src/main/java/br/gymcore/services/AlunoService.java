@@ -127,6 +127,14 @@ public class AlunoService {
         aluno.setAtivo(dadosPessoais.getAtivo());
     }
 
+    @Transactional
+    public void inativar(Long idAluno) {
+        Aluno aluno = alunoRepository.findById(idAluno)
+                .orElseThrow(() -> new EntityNotFoundException("Aluno não encontrado"));
+
+        aluno.setAtivo(Boolean.FALSE);
+    }
+
     @Transactional(readOnly = true)
     public AlunoDetalheDto getAlunoById(Long idAluno) {
         Aluno aluno = alunoRepository.findById(idAluno)

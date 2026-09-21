@@ -60,4 +60,11 @@ public class PlanoUnidadeController {
 
         return ResponseEntity.ok(Map.of("message", "Oferta de plano atualizada com sucesso"));
     }
+
+    @PutMapping("/inativar")
+    public ResponseEntity<Map<String, String>> inativar(@RequestParam Long idPlanoUnidade) {
+        planoUnidadeService.inativar(idPlanoUnidade);
+
+        return ResponseEntity.ok(Map.of("message", "Oferta de plano inativada com sucesso"));
+    }
 }

@@ -71,4 +71,11 @@ public class ModalidadeController {
 
         return ResponseEntity.ok(Map.of("message", "Modalidade atualizada com sucesso"));
     }
+
+    @PutMapping("/inativar")
+    public ResponseEntity<Map<String, String>> inativar(@RequestParam Long idModalidade) {
+        modalidadeService.inativar(idModalidade);
+
+        return ResponseEntity.ok(Map.of("message", "Modalidade inativada com sucesso"));
+    }
 }

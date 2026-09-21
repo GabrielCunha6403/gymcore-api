@@ -70,4 +70,11 @@ public class AlunoController {
 
         return ResponseEntity.ok(Map.of("message", "Aluno atualizado com sucesso"));
     }
+
+    @PutMapping("/inativar")
+    public ResponseEntity<Map<String, String>> inativar(@RequestParam Long idAluno) {
+        alunoService.inativar(idAluno);
+
+        return ResponseEntity.ok(Map.of("message", "Aluno inativado com sucesso"));
+    }
 }

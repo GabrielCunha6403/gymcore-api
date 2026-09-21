@@ -10,6 +10,7 @@ import br.gymcore.entities.ProfessorUnidade;
 import br.gymcore.entities.ProfessorUnidadeModalidade;
 import br.gymcore.entities.Unidade;
 import br.gymcore.entities.UnidadeModalidade;
+import br.gymcore.enums.ProfessorStatus;
 import br.gymcore.forms.ProfessorForm;
 import br.gymcore.repositories.PessoaRepository;
 import br.gymcore.repositories.ProfessorRepository;
@@ -18,6 +19,7 @@ import br.gymcore.repositories.ProfessorUnidadeRepository;
 import br.gymcore.repositories.UnidadeModalidadeRepository;
 import br.gymcore.repositories.UnidadeRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -58,11 +60,14 @@ public class ProfessorService {
             throw new IllegalArgumentException("Unidade não pertence ao estabelecimento informado");
         }
 
+        List<UnidadeModalidade> modalidades = buscarModalidadesDaUnidade(
+                form.getAtuacao().getUnidadeId(), form.getAtuacao().getModalidades());
+
         Pessoa pessoa = pessoaRepository.save(criarPessoa(form));
         Professor professor = professorRepository.save(criarProfessor(form, pessoa));
         ProfessorUnidade professorUnidade = professorUnidadeRepository.save(criarProfessorUnidade(form, professor, unidade));
 
-        vincularModalidades(form, professorUnidade);
+        vincularModalidades(professorUnidade, modalidades);
 
         return professor.getId();
     }
@@ -95,6 +100,31 @@ public class ProfessorService {
         if (atuacoes.isEmpty()) {
             return Collections.emptyList();
         }
+
+        List<Long> professorUnidadeIds = atuacoes.stream().map(ProfessorUnidade::getId).toList();
+        Map<Long, List<ProfessorUnidadeModalidade>> modalidadesPorAtuacao = professorUnidadeModalidadeRepository
+                .findAllByProfessorUnidade_IdIn(professorUnidadeIds)
+                .stream()
+                .collect(Collectors.groupingBy(vinculo -> vinculo.getProfessorUnidade().getId()));
+
+        return atuacoes.stream()
+                .map(atuacao -> toDtoPorUnidade(atuacao, modalidadesPorAtuacao.getOrDefault(atuacao.getId(), Collections.emptyList())))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProfessorListagemDto> listarPorUnidadeModalidade(Long idUnidadeModalidade) {
+        List<ProfessorUnidadeModalidade> vinculosModalidade = professorUnidadeModalidadeRepository
+                .findAllByUnidadeModalidade_IdIn(List.of(idUnidadeModalidade));
+
+        if (vinculosModalidade.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<ProfessorUnidade> atuacoes = vinculosModalidade.stream()
+                .map(ProfessorUnidadeModalidade::getProfessorUnidade)
+                .distinct()
+                .toList();
 
         List<Long> professorUnidadeIds = atuacoes.stream().map(ProfessorUnidade::getId).toList();
         Map<Long, List<ProfessorUnidadeModalidade>> modalidadesPorAtuacao = professorUnidadeModalidadeRepository
@@ -140,7 +170,36 @@ public class ProfessorService {
             ProfessorUnidade atuacaoPrincipal = atuacoes.get(0);
             atuacaoPrincipal.setCodigo(form.getAtuacao().getCodigoInterno());
             atuacaoPrincipal.setAtivo(form.getAtuacao().getAtivo());
+
+            atualizarModalidades(atuacaoPrincipal, form.getAtuacao().getModalidades());
         }
+    }
+
+    private void atualizarModalidades(ProfessorUnidade professorUnidade, List<Long> modalidades) {
+        List<UnidadeModalidade> unidadeModalidades = buscarModalidadesDaUnidade(
+                professorUnidade.getUnidade().getId(), modalidades);
+
+        professorUnidadeModalidadeRepository.deleteAllByProfessorUnidade_Id(professorUnidade.getId());
+        professorUnidadeModalidadeRepository.flush();
+        vincularModalidades(professorUnidade, unidadeModalidades);
+    }
+
+    @Transactional
+    public void inativar(Long idProfessor) {
+        Professor professor = professorRepository.findById(idProfessor)
+                .orElseThrow(() -> new EntityNotFoundException("Professor não encontrado"));
+
+        professor.setStatus(ProfessorStatus.INATIVO);
+    }
+
+    @Transactional
+    public void desligarDaUnidade(Long idProfessor, Long idUnidade) {
+        ProfessorUnidade professorUnidade = professorUnidadeRepository
+                .findByProfessor_IdAndUnidade_Id(idProfessor, idUnidade)
+                .orElseThrow(() -> new EntityNotFoundException("Vínculo do professor com a unidade não encontrado"));
+
+        professorUnidade.setAtivo(Boolean.FALSE);
+        professorUnidade.setDataDesligamento(LocalDate.now());
     }
 
     @Transactional(readOnly = true)
@@ -197,18 +256,25 @@ public class ProfessorService {
         return professorUnidade;
     }
 
-    private void vincularModalidades(ProfessorForm form, ProfessorUnidade professorUnidade) {
-        List<Long> modalidades = form.getAtuacao().getModalidades();
-
-        if (CollectionUtils.isEmpty(modalidades)) {
-            return;
+    private List<UnidadeModalidade> buscarModalidadesDaUnidade(Long idUnidade, List<Long> idsUnidadeModalidade) {
+        if (CollectionUtils.isEmpty(idsUnidadeModalidade)) {
+            return Collections.emptyList();
         }
 
+        List<Long> idsUnicos = idsUnidadeModalidade.stream().distinct().toList();
         List<UnidadeModalidade> unidadeModalidades = unidadeModalidadeRepository
-                .findAllByIdInAndUnidade_Id(modalidades, form.getAtuacao().getUnidadeId());
+                .findAllByIdInAndUnidade_Id(idsUnicos, idUnidade);
 
-        if (unidadeModalidades.size() != modalidades.size()) {
+        if (unidadeModalidades.size() != idsUnicos.size()) {
             throw new IllegalArgumentException("Uma ou mais modalidades nao pertencem a unidade informada");
+        }
+
+        return unidadeModalidades;
+    }
+
+    private void vincularModalidades(ProfessorUnidade professorUnidade, List<UnidadeModalidade> unidadeModalidades) {
+        if (unidadeModalidades.isEmpty()) {
+            return;
         }
 
         List<ProfessorUnidadeModalidade> vinculos = unidadeModalidades.stream()

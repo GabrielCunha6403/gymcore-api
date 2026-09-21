@@ -49,6 +49,24 @@ public class UnidadeModalidadeService {
         return unidadeModalidadeRepository.save(unidadeModalidade).getId();
     }
 
+    @Transactional
+    public void atualizar(Long idUnidadeModalidade, UnidadeModalidadeForm form) {
+        UnidadeModalidade unidadeModalidade = unidadeModalidadeRepository.findById(idUnidadeModalidade)
+                .orElseThrow(() -> new EntityNotFoundException("Vínculo de modalidade não encontrado"));
+
+        unidadeModalidade.setDescricao(form.getDescricao());
+        unidadeModalidade.setCapacidadePadrao(form.getCapacidadePadrao());
+        unidadeModalidade.setAtivo(form.getAtivo() != null ? form.getAtivo() : Boolean.TRUE);
+    }
+
+    @Transactional
+    public void inativar(Long idUnidadeModalidade) {
+        UnidadeModalidade unidadeModalidade = unidadeModalidadeRepository.findById(idUnidadeModalidade)
+                .orElseThrow(() -> new EntityNotFoundException("Vínculo de modalidade não encontrado"));
+
+        unidadeModalidade.setAtivo(Boolean.FALSE);
+    }
+
     @Transactional(readOnly = true)
     public List<UnidadeModalidadeListagemDto> listar(Long idUnidade) {
         return unidadeModalidadeRepository.listarPorUnidade(idUnidade)

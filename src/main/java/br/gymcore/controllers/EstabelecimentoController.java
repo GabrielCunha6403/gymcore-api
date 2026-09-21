@@ -56,4 +56,11 @@ public class EstabelecimentoController {
 
         return ResponseEntity.ok(Map.of("message", "Estabelecimento atualizado com sucesso"));
     }
+
+    @PutMapping("/inativar")
+    public ResponseEntity<Map<String, String>> inativar(@RequestParam Long idEstabelecimento) {
+        estabelecimentoService.inativar(idEstabelecimento);
+
+        return ResponseEntity.ok(Map.of("message", "Estabelecimento inativado com sucesso"));
+    }
 }
