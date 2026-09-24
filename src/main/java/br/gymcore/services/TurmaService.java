@@ -66,6 +66,33 @@ public class TurmaService {
         return turma.getId();
     }
 
+    @Transactional
+    public void atualizar(Long idTurma, TurmaForm form) {
+        Turma turma = turmaRepository.findById(idTurma)
+                .orElseThrow(() -> new EntityNotFoundException("Turma não encontrada"));
+
+        UnidadeModalidade unidadeModalidade = unidadeModalidadeRepository.findById(form.getIdUnidadeModalidade())
+                .orElseThrow(() -> new EntityNotFoundException("Modalidade da unidade não encontrada"));
+
+        ProfessorUnidade professorUnidade = professorUnidadeRepository
+                .findByProfessor_IdAndUnidade_Id(form.getIdProfessor(), unidadeModalidade.getUnidade().getId())
+                .orElseThrow(() -> new EntityNotFoundException("Professor não vinculado a esta unidade"));
+
+        if (professorUnidade.getDataDesligamento() != null) {
+            throw new IllegalStateException("Professor desligado desta unidade não pode ser vinculado a novas turmas");
+        }
+
+        turma.setUnidadeModalidade(unidadeModalidade);
+        turma.setProfessorUnidade(professorUnidade);
+        turma.setNome(form.getNome());
+        turma.setCapacidade(form.getCapacidade());
+        turma.setAtivo(form.getAtivo() != null ? form.getAtivo() : Boolean.TRUE);
+
+        turmaHorarioRepository.deleteAllByTurma_Id(turma.getId());
+        turmaHorarioRepository.flush();
+        turmaHorarioRepository.saveAll(criarHorarios(form, turma));
+    }
+
     @Transactional(readOnly = true)
     public List<TurmaListagemDto> listarPorUnidade(Long idUnidade) {
         return montarListagem(turmaRepository.listarPorUnidade(idUnidade));

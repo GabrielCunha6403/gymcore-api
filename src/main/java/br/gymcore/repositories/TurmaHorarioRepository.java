@@ -10,4 +10,6 @@ public interface TurmaHorarioRepository extends JpaRepository<TurmaHorario, Long
     List<TurmaHorario> findAllByTurma_IdInOrderByDiaSemanaAscHoraInicioAsc(Collection<Long> turmaIds);
 
     List<TurmaHorario> findAllByTurma_IdOrderByDiaSemanaAscHoraInicioAsc(Long idTurma);
+
+    void deleteAllByTurma_Id(Long idTurma);
 }
