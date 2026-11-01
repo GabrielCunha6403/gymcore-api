@@ -1,8 +1,11 @@
 package br.gymcore.services;
 
+import br.gymcore.dtos.ItemPendenciaInativacaoDto;
 import br.gymcore.dtos.ModalidadeGeralListagemDto;
 import br.gymcore.dtos.ModalidadeListagemDto;
 import br.gymcore.dtos.PageDto;
+import br.gymcore.dtos.PendenciaInativacaoDto;
+import br.gymcore.dtos.VerificacaoInativacaoDto;
 import br.gymcore.entities.Estabelecimento;
 import br.gymcore.entities.Modalidade;
 import br.gymcore.entities.Pessoa;
@@ -11,12 +14,15 @@ import br.gymcore.entities.ProfessorUnidade;
 import br.gymcore.entities.ProfessorUnidadeModalidade;
 import br.gymcore.entities.Unidade;
 import br.gymcore.entities.UnidadeModalidade;
+import br.gymcore.enums.TipoPendenciaInativacao;
+import br.gymcore.exceptions.EntidadeComDependenciasAtivasException;
 import br.gymcore.forms.ModalidadeForm;
 import br.gymcore.repositories.EstabelecimentoRepository;
 import br.gymcore.repositories.ModalidadeRepository;
 import br.gymcore.repositories.ProfessorUnidadeModalidadeRepository;
 import br.gymcore.repositories.UnidadeModalidadeRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +44,7 @@ public class ModalidadeService {
     private final ModalidadeRepository modalidadeRepository;
     private final UnidadeModalidadeRepository unidadeModalidadeRepository;
     private final ProfessorUnidadeModalidadeRepository professorUnidadeModalidadeRepository;
+    private final UnidadeModalidadeService unidadeModalidadeService;
 
     @Transactional
     public Long cadastrar(ModalidadeForm form) {
@@ -68,12 +75,80 @@ public class ModalidadeService {
         modalidade.setAtivo(form.getAtivo() != null ? form.getAtivo() : Boolean.TRUE);
     }
 
+    @Transactional(readOnly = true)
+    public VerificacaoInativacaoDto verificarInativacao(Long idModalidade) {
+        Modalidade modalidade = buscarModalidadeAtiva(idModalidade);
+        Long idEstabelecimento = modalidade.getEstabelecimento().getId();
+
+        return verificarInativacao(
+                modalidade,
+                unidadeModalidadeRepository.listarAtivasPorModalidade(modalidade.getId(), idEstabelecimento)
+        );
+    }
+
+    /**
+     * Revalida as pendências na mesma transação antes de inativar; o resultado da
+     * verificação feita pelo front pode estar desatualizado.
+     *
+     * @return quantidade de registros dependentes inativados em cadeia
+     */
     @Transactional
-    public void inativar(Long idModalidade) {
+    public int inativar(Long idModalidade, boolean cascata) {
+        Modalidade modalidade = buscarModalidadeAtiva(idModalidade);
+        Long idEstabelecimento = modalidade.getEstabelecimento().getId();
+        List<UnidadeModalidade> ofertas = unidadeModalidadeRepository
+                .listarAtivasPorModalidade(modalidade.getId(), idEstabelecimento);
+
+        VerificacaoInativacaoDto verificacao = verificarInativacao(modalidade, ofertas);
+
+        if (!verificacao.podeInativar()) {
+            throw new EntidadeComDependenciasAtivasException(
+                    "A modalidade possui pendências que impedem a inativação",
+                    verificacao
+            );
+        }
+
+        if (verificacao.exigeCascata() && !cascata) {
+            throw new EntidadeComDependenciasAtivasException(
+                    "A inativação da modalidade exige confirmação da inativação em cadeia",
+                    verificacao
+            );
+        }
+
+        int inativadosEmCadeia = unidadeModalidadeService.inativarEmCadeia(ofertas, idEstabelecimento);
+        modalidade.setAtivo(Boolean.FALSE);
+
+        return inativadosEmCadeia;
+    }
+
+    private VerificacaoInativacaoDto verificarInativacao(Modalidade modalidade, List<UnidadeModalidade> ofertas) {
+        Long idEstabelecimento = modalidade.getEstabelecimento().getId();
+        List<PendenciaInativacaoDto> pendencias = new ArrayList<>();
+
+        pendencias.add(PendenciaInativacaoDto.of(
+                TipoPendenciaInativacao.CASCATA,
+                "unidade_modalidade",
+                "Unidades que oferecem esta modalidade, cuja oferta será inativada.",
+                ofertas,
+                oferta -> new ItemPendenciaInativacaoDto(
+                        String.valueOf(oferta.getId()),
+                        oferta.getUnidade().getNome()
+                )
+        ));
+        pendencias.addAll(unidadeModalidadeService.verificarPendenciasInativacao(ofertas, idEstabelecimento));
+
+        return VerificacaoInativacaoDto.of(pendencias);
+    }
+
+    private Modalidade buscarModalidadeAtiva(Long idModalidade) {
         Modalidade modalidade = modalidadeRepository.findById(idModalidade)
                 .orElseThrow(() -> new EntityNotFoundException("Modalidade não encontrada"));
 
-        modalidade.setAtivo(Boolean.FALSE);
+        if (!Boolean.TRUE.equals(modalidade.getAtivo())) {
+            throw new IllegalStateException("Modalidade já está inativa");
+        }
+
+        return modalidade;
     }
 
     public List<ModalidadeListagemDto> listar(Long idEstabelecimento, String busca) {

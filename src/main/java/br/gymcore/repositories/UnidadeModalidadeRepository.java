@@ -3,6 +3,7 @@ package br.gymcore.repositories;
 import br.gymcore.entities.UnidadeModalidade;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,7 +12,7 @@ public interface UnidadeModalidadeRepository extends JpaRepository<UnidadeModali
 
     List<UnidadeModalidade> findAllByIdInAndUnidade_Id(Collection<Long> ids, Long unidadeId);
 
-    boolean existsByUnidade_IdAndModalidade_Id(Long unidadeId, Long modalidadeId);
+    Optional<UnidadeModalidade> findByUnidade_IdAndModalidade_Id(Long unidadeId, Long modalidadeId);
 
     @Query("""
             select um
@@ -29,4 +30,18 @@ public interface UnidadeModalidadeRepository extends JpaRepository<UnidadeModali
             where um.modalidade.id in :idsModalidade
             """)
     List<UnidadeModalidade> findAllByModalidade_IdIn(@Param("idsModalidade") Collection<Long> idsModalidade);
+
+    @Query("""
+            select um
+            from UnidadeModalidade um
+            join fetch um.unidade u
+            where um.modalidade.id = :idModalidade
+              and u.estabelecimento.id = :idEstabelecimento
+              and um.ativo = true
+            order by u.nome
+            """)
+    List<UnidadeModalidade> listarAtivasPorModalidade(
+            @Param("idModalidade") Long idModalidade,
+            @Param("idEstabelecimento") Long idEstabelecimento
+    );
 }

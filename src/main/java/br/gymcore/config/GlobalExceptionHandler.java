@@ -1,5 +1,6 @@
 package br.gymcore.config;
 
+import br.gymcore.exceptions.EntidadeComDependenciasAtivasException;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -18,5 +19,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({ IllegalArgumentException.class, IllegalStateException.class })
     public ResponseEntity<Map<String, String>> handleBadRequest(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(EntidadeComDependenciasAtivasException.class)
+    public ResponseEntity<Map<String, Object>> handleDependenciasAtivas(EntidadeComDependenciasAtivasException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "podeInativar", ex.getVerificacao().podeInativar(),
+                "exigeCascata", ex.getVerificacao().exigeCascata(),
+                "pendencias", ex.getVerificacao().pendencias()
+        ));
     }
 }

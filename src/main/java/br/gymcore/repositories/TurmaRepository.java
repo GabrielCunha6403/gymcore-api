@@ -1,6 +1,7 @@
 package br.gymcore.repositories;
 
 import br.gymcore.entities.Turma;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -47,4 +48,19 @@ public interface TurmaRepository extends JpaRepository<Turma, Long> {
             order by t.nome
             """)
     List<Turma> listarAtivasPorUnidade(@Param("idUnidade") Long idUnidade);
+
+    @Query("""
+            select t
+            from Turma t
+            join fetch t.unidadeModalidade um
+            join fetch um.unidade u
+            where um.id in :idsUnidadeModalidade
+              and u.estabelecimento.id = :idEstabelecimento
+              and t.ativo = true
+            order by u.nome, t.nome
+            """)
+    List<Turma> listarAtivasPorUnidadeModalidade(
+            @Param("idsUnidadeModalidade") Collection<Long> idsUnidadeModalidade,
+            @Param("idEstabelecimento") Long idEstabelecimento
+    );
 }

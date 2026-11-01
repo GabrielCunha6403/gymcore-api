@@ -3,6 +3,7 @@ package br.gymcore.controllers;
 import br.gymcore.dtos.ModalidadeGeralListagemDto;
 import br.gymcore.dtos.ModalidadeListagemDto;
 import br.gymcore.dtos.PageDto;
+import br.gymcore.dtos.VerificacaoInativacaoDto;
 import br.gymcore.forms.ModalidadeForm;
 import br.gymcore.services.ModalidadeService;
 import jakarta.validation.Valid;
@@ -72,10 +73,21 @@ public class ModalidadeController {
         return ResponseEntity.ok(Map.of("message", "Modalidade atualizada com sucesso"));
     }
 
-    @PutMapping("/inativar")
-    public ResponseEntity<Map<String, String>> inativar(@RequestParam Long idModalidade) {
-        modalidadeService.inativar(idModalidade);
+    @GetMapping("/inativar")
+    public ResponseEntity<VerificacaoInativacaoDto> verificarInativacao(@RequestParam Long idModalidade) {
+        return ResponseEntity.ok(modalidadeService.verificarInativacao(idModalidade));
+    }
 
-        return ResponseEntity.ok(Map.of("message", "Modalidade inativada com sucesso"));
+    @PutMapping("/inativar")
+    public ResponseEntity<Map<String, Object>> inativar(
+            @RequestParam Long idModalidade,
+            @RequestParam(defaultValue = "false") boolean cascata
+    ) {
+        int inativadosEmCadeia = modalidadeService.inativar(idModalidade, cascata);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Modalidade inativada com sucesso",
+                "inativadosEmCadeia", inativadosEmCadeia
+        ));
     }
 }
